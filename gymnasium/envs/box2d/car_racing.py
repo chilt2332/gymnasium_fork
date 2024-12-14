@@ -252,19 +252,6 @@ class CarRacing(Env, EzPickle):
             idx = self.np_random.integers(3)
             self.grass_color[idx] += 20
 
-    def _render_obstacles(self, zoom, translation, angle):
-        """
-        Render all static obstacles (including circles) in the environment.
-        """
-        for body in self.world.bodies:
-            if hasattr(body, "userData") and isinstance(body.userData, dict):
-                if body.userData.get("type") == "obstacle":
-                    position = body.position
-                    color = body.userData["color"]
-
-                    radius = body.userData["radius"]
-                    self._draw_colored_circle(self.surf, position, radius, color, zoom, translation, angle)
-
     def _add_circle_obstacle(self, x, y, radius):
         """
         Adds a circle obstacle to the Box2D world at (x, y) with the given radius.
@@ -681,8 +668,8 @@ class CarRacing(Env, EzPickle):
             poly = [(p[0], p[1]) for p in poly]
             color = [int(c) for c in color]
             self._draw_colored_polygon(self.surf, poly, color, zoom, translation, angle)
-
-        self._render_obstacles(zoom, translation, angle)
+ 
+        self._draw_colored_circle(self.surf, (0,0), 150, [50, 0, 50], zoom, translation, angle)
 
     def _render_indicators(self, W, H):
         s = W / 40.0
