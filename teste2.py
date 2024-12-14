@@ -5,6 +5,8 @@ import os
 models_dir = "models/PPO"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
+    print("não existe")
+print("ja existe")
 
 
 env = make('CarRacing-v3', render_mode='human')
