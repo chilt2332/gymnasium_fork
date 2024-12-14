@@ -252,6 +252,19 @@ class CarRacing(Env, EzPickle):
             idx = self.np_random.integers(3)
             self.grass_color[idx] += 20
 
+    def _render_obstacles(self, zoom, translation, angle):
+        """
+        Render all static obstacles (including circles) in the environment.
+        """
+        for body in self.world.bodies:
+            if hasattr(body, "userData") and isinstance(body.userData, dict):
+                if body.userData.get("type") == "obstacle":
+                    position = body.position
+                    color = body.userData["color"]
+
+                    radius = body.userData["radius"]
+                    self._draw_colored_circle(self.surf, position, radius, color, zoom, translation, angle)
+
     def _add_circle_obstacle(self, x, y, radius):
         """
         Adds a circle obstacle to the Box2D world at (x, y) with the given radius.
@@ -456,7 +469,7 @@ class CarRacing(Env, EzPickle):
                         (255, 255, 255) if i % 2 == 0 else (255, 0, 0),
                     )
                 )
-        self.obstacle = self._add_circle_obstacle(0, 0, 50)
+        self.obstacle = self._add_circle_obstacle(0, 0, 10)
 
         self.track = track
         return True
@@ -668,8 +681,8 @@ class CarRacing(Env, EzPickle):
             poly = [(p[0], p[1]) for p in poly]
             color = [int(c) for c in color]
             self._draw_colored_polygon(self.surf, poly, color, zoom, translation, angle)
- 
-        self._draw_colored_circle(self.surf, (0,0), 150, [50, 0, 50], zoom, translation, angle)
+
+        self._render_obstacles(zoom, translation, angle)
 
     def _render_indicators(self, W, H):
         s = W / 40.0
@@ -745,20 +758,17 @@ class CarRacing(Env, EzPickle):
         """
         # Convert position from Box2D coordinates to screen coordinates
         screen_position = (position[0] * zoom + translation[0], position[1] * zoom + translation[1])
-        pygame.draw.circle(surface, color, (int(screen_position[0]), int(screen_position[1])), int(radius * zoom))
-
-    def _draw_colored_polygon(
-        self, surface, poly, color, zoom, translation, angle, clip=True
-    ):
+        
+        # Ensure that we are not drawing the circle outside the screen bounds
+        if 0 <= screen_position[0] < WINDOW_W and 0 <= screen_position[1] < WINDOW_H:
+            pygame.draw.circle(surface, color, (int(screen_position[0]), int(screen_position[1])), int(radius * zoom))
+            
+    def _draw_colored_polygon(self, surface, poly, color, zoom, translation, angle, clip=True):
         poly = [pygame.math.Vector2(c).rotate_rad(angle) for c in poly]
         poly = [
             (c[0] * zoom + translation[0], c[1] * zoom + translation[1]) for c in poly
         ]
-        # This checks if the polygon is out of bounds of the screen, and we skip drawing if so.
-        # Instead of calculating exactly if the polygon and screen overlap,
-        # we simply check if the polygon is in a larger bounding box whose dimension
-        # is greater than the screen by MAX_SHAPE_DIM, which is the maximum
-        # diagonal length of an environment object
+        # This checks if the polygon is out of bounds of the screen
         if not clip or any(
             (-MAX_SHAPE_DIM <= coord[0] <= WINDOW_W + MAX_SHAPE_DIM)
             and (-MAX_SHAPE_DIM <= coord[1] <= WINDOW_H + MAX_SHAPE_DIM)
@@ -766,6 +776,7 @@ class CarRacing(Env, EzPickle):
         ):
             gfxdraw.aapolygon(self.surf, poly, color)
             gfxdraw.filled_polygon(self.surf, poly, color)
+
 
     def _create_image_array(self, screen, size):
         scaled_screen = pygame.transform.smoothscale(screen, size)
