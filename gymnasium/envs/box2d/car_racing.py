@@ -465,8 +465,10 @@ class CarRacing(Env, EzPickle):
                 )
         for i in range(NUM_OBSTACLES):
             x,y = random.choice(tiles_positions)
-            x = int(x)
-            y = int(y)
+            x_plus = random.randint(-5, 5)
+            y_plus = random.randint(-5, 5)
+            x = int(x) + x_plus
+            y = int(y) + y_plus
             print(f"posiçao aleatoria x:{x}, y:{y}")
             self.obstacle = self._add_circle_obstacle(x, y, CIRCLERADIUS)
 
