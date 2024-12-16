@@ -252,19 +252,6 @@ class CarRacing(Env, EzPickle):
             idx = self.np_random.integers(3)
             self.grass_color[idx] += 20
 
-    def _render_obstacles(self, zoom, translation, angle):
-        """
-        Render all static obstacles (including circles) in the environment.
-        """
-        for body in self.world.bodies:
-            if hasattr(body, "userData") and isinstance(body.userData, dict):
-                if body.userData.get("type") == "obstacle":
-                    position = body.position
-                    color = body.userData["color"]
-
-                    radius = body.userData["radius"]
-                    self._draw_colored_circle(self.surf, position, radius, color, zoom, translation, angle)
-
     def _add_circle_obstacle(self, x, y, radius):
         """
         Adds a circle obstacle to the Box2D world at (x, y) with the given radius.
@@ -691,7 +678,35 @@ class CarRacing(Env, EzPickle):
             color = [int(c) for c in color]
             self._draw_colored_polygon(self.surf, poly, color, zoom, translation, angle)
 
-        self._render_obstacles(zoom, translation, angle)
+        for body in self.world.bodies:
+            if hasattr(body, "userData") and isinstance(body.userData, dict):
+                if body.userData.get("type") == "obstacle":
+                    position = body.position
+                    color = body.userData["color"]
+
+                    radius = body.userData["radius"]
+                    self._draw_colored_circle(self.surf, position, radius, color, zoom, translation, angle)
+        
+    def _draw_colored_circle(self, surface, center, radius, color, zoom, translation, angle, clip=True):
+        # Rotate the center point based on the environment's angle
+        rotated_center = pygame.math.Vector2(center).rotate_rad(angle)
+        
+        # Apply zoom and translation after rotation
+        transformed_center = (
+            rotated_center[0] * zoom + translation[0],
+            rotated_center[1] * zoom + translation[1]
+        )
+        transformed_radius = int(radius * zoom)
+
+        # Check if the circle is within the screen boundaries
+        if not clip or (
+            -MAX_SHAPE_DIM <= transformed_center[0] <= WINDOW_W + MAX_SHAPE_DIM
+            and -MAX_SHAPE_DIM <= transformed_center[1] <= WINDOW_H + MAX_SHAPE_DIM
+        ):
+            # Draw the circle with anti-aliasing
+            gfxdraw.aacircle(surface, int(transformed_center[0]), int(transformed_center[1]), transformed_radius, color)
+            gfxdraw.filled_circle(surface, int(transformed_center[0]), int(transformed_center[1]), transformed_radius, color)
+
 
     def _render_indicators(self, W, H):
         s = W / 40.0
@@ -760,18 +775,6 @@ class CarRacing(Env, EzPickle):
             horiz_ind(30, -0.8 * self.car.hull.angularVelocity),
             (255, 0, 0),
         )
-
-    def _draw_colored_circle(self, surface, position, radius, color, zoom, translation, angle):
-        """
-        Helper function to draw a circle on the screen.
-        """
-        # Convert position from Box2D coordinates to screen coordinates
-        screen_position = (position[0] * zoom + translation[0], position[1] * zoom + translation[1])
-        
-        # Ensure that we are not drawing the circle outside the screen bounds
-        if 0 <= screen_position[0] < WINDOW_W and 0 <= screen_position[1] < WINDOW_H:
-            pygame.draw.circle(surface, color, (int(screen_position[0]), int(screen_position[1])), int(radius * zoom))
-            print(f"imprimi na posiçao x:{screen_position[0]} e y:{screen_position[1]}")
 
     def _draw_colored_polygon(self, surface, poly, color, zoom, translation, angle, clip=True):
         poly = [pygame.math.Vector2(c).rotate_rad(angle) for c in poly]
