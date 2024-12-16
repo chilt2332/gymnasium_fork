@@ -473,11 +473,12 @@ class CarRacing(Env, EzPickle):
                         (255, 255, 255) if i % 2 == 0 else (255, 0, 0),
                     )
                 )
-        x,y = random.choice(tiles_positions)
-        x = int(x)
-        y = int(y)
-        print(f"posiçao aleatoria x:{x}, y:{y}")
-        self.obstacle = self._add_circle_obstacle(x, y, 10)
+        for i in range(5):
+            x,y = random.choice(tiles_positions)
+            x = int(x)
+            y = int(y)
+            print(f"posiçao aleatoria x:{x}, y:{y}")
+            self.obstacle = self._add_circle_obstacle(x, y, 5)
 
         self.track = track
         return True
