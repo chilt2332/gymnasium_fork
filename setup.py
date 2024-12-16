@@ -1,37 +1,22 @@
-"""Sets up the project."""
+from stable_baselines3 import PPO
+from gymnasium.envs.registration import make
 
-import pathlib
+models_dir = "models/PPO_Cnn_Obstacles"
 
-from setuptools import setup
+env = make("models/PPO_Cnn_Obstacles",render_mode = "human")  # continuous: LunarLanderContinuous-v2
+env.reset()
 
+model_path = f"{models_dir}/10000000.zip"
+model = PPO.load(model_path, env=env)
 
-CWD = pathlib.Path(__file__).absolute().parent
+episodes = 1
 
-
-def get_version():
-    """Gets the gymnasium version."""
-    path = CWD / "gymnasium" / "__init__.py"
-    content = path.read_text()
-
-    for line in content.splitlines():
-        if line.startswith("__version__"):
-            return line.strip().split()[-1].strip().strip('"')
-    raise RuntimeError("bad version data in __init__.py")
-
-
-def get_description():
-    """Gets the description from the readme."""
-    with open("README.md") as fh:
-        long_description = ""
-        header_count = 0
-        for line in fh:
-            if line.startswith("##"):
-                header_count += 1
-            if header_count < 2:
-                long_description += line
-            else:
-                break
-    return long_description
-
-
-setup(name="gymnasium", version=get_version(), long_description=get_description())
+for ep in range(episodes):
+    obs, info = env.reset()
+    done = False
+    while not done:
+        action, _states = model.predict(obs)
+        obs, rewards, trunc, done, info = env.step(action)
+        env.render()
+        print(ep, rewards, done)
+        print("---------------")

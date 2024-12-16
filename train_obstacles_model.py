@@ -2,7 +2,7 @@ from stable_baselines3 import PPO
 from gymnasium.envs.registration import make
 import os
 
-models_dir = "models/PPO_"
+models_dir = "models/PPO_Cnn_Obstacles"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
@@ -12,7 +12,7 @@ env.reset()
 model = PPO('CnnPolicy', env, verbose=1)
 
 TIMESTEPS = 10000
-MAX_ITERATIONS = 10
+MAX_ITERATIONS = 1000
 iters = 0
 
 while iters < MAX_ITERATIONS:
@@ -21,3 +21,6 @@ while iters < MAX_ITERATIONS:
     model.save(f"{models_dir}/ppo_car_racing_{TIMESTEPS * iters}")
 
 env.close()
+
+
+
