@@ -761,6 +761,7 @@ class CarRacing(Env, EzPickle):
         # Ensure that we are not drawing the circle outside the screen bounds
         if 0 <= screen_position[0] < WINDOW_W and 0 <= screen_position[1] < WINDOW_H:
             pygame.draw.circle(surface, color, (int(screen_position[0]), int(screen_position[1])), int(radius * zoom))
+            print(f"desenhei nas posiçoes x = {screen_position[0]} e y = {screen_position[1]}")
 
     def _draw_colored_polygon(self, surface, poly, color, zoom, translation, angle, clip=True):
         poly = [pygame.math.Vector2(c).rotate_rad(angle) for c in poly]
