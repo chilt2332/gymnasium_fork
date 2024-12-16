@@ -80,7 +80,7 @@ class FrictionDetector(contactListener):
         if hasattr(body_b, "userData") and isinstance(body_b.userData, dict):
             if body_b.userData.get("type") == "obstacle":
                 # Handle collision with obstacle
-                pass
+                self.env.reward -= 100
 
     def EndContact(self, contact):
         self._contact(contact, False)
