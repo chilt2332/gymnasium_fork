@@ -30,6 +30,8 @@ except ImportError as e:
         'pygame is not installed, run `pip install "gymnasium[box2d]"`'
     ) from e
 
+CIRCLERADIUS = 5 #nossa variavel
+NUM_OBSTACLES = 10 #nossa variavel
 
 STATE_W = 96  # less than Atari 160x192
 STATE_H = 96
@@ -81,7 +83,7 @@ class FrictionDetector(contactListener):
         if hasattr(body_b, "userData") and isinstance(body_b.userData, dict):
             if body_b.userData.get("type") == "obstacle":
                 # Handle collision with obstacle
-                self.env.reward -= 100
+                self.env.reward -= 10
 
     def EndContact(self, contact):
         self._contact(contact, False)
@@ -460,12 +462,12 @@ class CarRacing(Env, EzPickle):
                         (255, 255, 255) if i % 2 == 0 else (255, 0, 0),
                     )
                 )
-        for i in range(5):
+        for i in range(NUM_OBSTACLES):
             x,y = random.choice(tiles_positions)
             x = int(x)
             y = int(y)
             print(f"posiçao aleatoria x:{x}, y:{y}")
-            self.obstacle = self._add_circle_obstacle(x, y, 5)
+            self.obstacle = self._add_circle_obstacle(x, y, CIRCLERADIUS)
 
         self.track = track
         return True
@@ -511,7 +513,7 @@ class CarRacing(Env, EzPickle):
         if self.render_mode == "human":
             self.render()
         return self.step(None)[0], {}
-
+    
     def step(self, action: Union[np.ndarray, int]):
         assert self.car is not None
         if action is not None:
@@ -523,8 +525,8 @@ class CarRacing(Env, EzPickle):
             else:
                 if not self.action_space.contains(action):
                     raise InvalidAction(
-                        f"you passed the invalid action {action}. "
-                        f"The supported action_space is {self.action_space}"
+                        f"you passed the invalid action `{action}`. "
+                        f"The supported action_space is `{self.action_space}`"
                     )
                 self.car.steer(-0.6 * (action == 1) + 0.6 * (action == 2))
                 self.car.gas(0.2 * (action == 3))
@@ -534,15 +536,7 @@ class CarRacing(Env, EzPickle):
         self.world.Step(1.0 / FPS, 6 * 30, 2 * 30)
         self.t += 1.0 / FPS
 
-        # Check if car hit the obstacle
-        if getattr(self.car, "hit_obstacle", False):
-            terminated = True
-            info["hit_obstacle"] = True # type: ignore
-            step_reward = -100  # Heavy penalty for hitting an obstacle
-        else:
-            step_reward = self.reward - self.prev_reward
-
-            self.state = self._render("state_pixels")
+        self.state = self._render("state_pixels")
 
         step_reward = 0
         terminated = False
