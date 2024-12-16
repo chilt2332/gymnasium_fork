@@ -2,6 +2,7 @@ import math
 from typing import Optional, Union
 from Box2D import b2CircleShape
 import numpy as np
+import random
 
 from gymnasium.core import Env
 from gymnasium.logger import warn
@@ -80,7 +81,7 @@ class FrictionDetector(contactListener):
         if hasattr(body_b, "userData") and isinstance(body_b.userData, dict):
             if body_b.userData.get("type") == "obstacle":
                 # Handle collision with obstacle
-                pass
+                self.env.reward -=100
 
     def EndContact(self, contact):
         self._contact(contact, False)
@@ -145,6 +146,7 @@ class FrictionDetector(contactListener):
             else:
                 # Optionally log a warning or handle the case where the tile is not in the list
                 print(f"Warning: Tile {tile} not found in tiles list of {obj}")
+
 
 class CarRacing(Env, EzPickle):
     metadata = {
@@ -258,10 +260,14 @@ class CarRacing(Env, EzPickle):
         for body in self.world.bodies:
             if hasattr(body, "userData") and isinstance(body.userData, dict):
                 if body.userData.get("type") == "obstacle":
-                    position = body.position
+                    position = body.userData["position"]
                     color = body.userData["color"]
-
                     radius = body.userData["radius"]
+
+                    # Debugging the position, color, and radius
+                    print(f"Rendering obstacle at position: {position}, color: {color}, radius: {radius}")
+
+                    # Make sure to call the function to render the circle
                     self._draw_colored_circle(self.surf, position, radius, color, zoom, translation, angle)
 
     def _add_circle_obstacle(self, x, y, radius):
@@ -278,11 +284,12 @@ class CarRacing(Env, EzPickle):
         )
         
         # Add userData for rendering
-        body.userData = {"type": "obstacle", "color": (255, 0, 0), "radius": radius}
+        body.userData = {"type": "obstacle", "color": (255, 0, 0), "radius": radius, "position":[x,y]}
         return body
 
     def _create_track(self):
         CHECKPOINTS = 12
+        self.tile_positions = []
 
         # Create checkpoints
         checkpoints = []
@@ -432,6 +439,11 @@ class CarRacing(Env, EzPickle):
                 x2 + TRACK_WIDTH * math.cos(beta2),
                 y2 + TRACK_WIDTH * math.sin(beta2),
             )
+            tile_center = [(road1_l[0] + road1_r[0] + road2_l[0] + road2_r[0]) / 4,
+                (road1_l[1] + road1_r[1] + road2_l[1] + road2_r[1]) / 4]
+            
+            # Store the center position in tile_positions
+            self.tile_positions.append(tile_center)
             vertices = [road1_l, road1_r, road2_r, road2_l]
             self.fd_tile.shape.vertices = vertices
             t = self.world.CreateStaticBody(fixtures=self.fd_tile)
@@ -468,7 +480,8 @@ class CarRacing(Env, EzPickle):
                         (255, 255, 255) if i % 2 == 0 else (255, 0, 0),
                     )
                 )
-        self.obstacle = self._add_circle_obstacle(0, 0, 10)
+        self.tile_position = random.choice(self.tile_positions)
+        self.obstacle = self._add_circle_obstacle(self.tile_position[0], self.tile_position[1], 10)
 
         self.track = track
         return True
@@ -526,8 +539,8 @@ class CarRacing(Env, EzPickle):
             else:
                 if not self.action_space.contains(action):
                     raise InvalidAction(
-                        f"you passed the invalid action {action}. "
-                        f"The supported action_space is {self.action_space}"
+                        f"you passed the invalid action `{action}`. "
+                        f"The supported action_space is `{self.action_space}`"
                     )
                 self.car.steer(-0.6 * (action == 1) + 0.6 * (action == 2))
                 self.car.gas(0.2 * (action == 3))
@@ -750,18 +763,26 @@ class CarRacing(Env, EzPickle):
             horiz_ind(30, -0.8 * self.car.hull.angularVelocity),
             (255, 0, 0),
         )
-
-    def _draw_colored_circle(self, surface, position, radius, color, zoom, translation, angle):
-        """
-        Helper function to draw a circle on the screen.
-        """
-        # Convert position from Box2D coordinates to screen coordinates
-        screen_position = (position[0] * zoom + translation[0], position[1] * zoom + translation[1])
         
-        # Ensure that we are not drawing the circle outside the screen bounds
-        if 0 <= screen_position[0] < WINDOW_W and 0 <= screen_position[1] < WINDOW_H:
-            pygame.draw.circle(surface, color, (int(screen_position[0]), int(screen_position[1])), int(radius * zoom))
+    def _draw_colored_circle(self, surf, position, radius, color, zoom, translation, angle):
+        # Convert world position to screen position
+        screen_x = position[0] * zoom + translation[0]
+        screen_y = position[1] * zoom + translation[1]
+        
+        # Debug output: Check the transformed positions
+        print(f"World position: {position}, Screen position: ({screen_x}, {screen_y})")
 
+        # Draw the circle using the calculated screen position and scaled radius
+        pygame.draw.circle(
+            surf, 
+            color, 
+            (int(screen_x), int(screen_y)),  # Transformed screen position
+            int(radius * zoom)  # Scaled radius
+        )
+
+
+
+            
     def _draw_colored_polygon(self, surface, poly, color, zoom, translation, angle, clip=True):
         poly = [pygame.math.Vector2(c).rotate_rad(angle) for c in poly]
         poly = [
@@ -775,6 +796,7 @@ class CarRacing(Env, EzPickle):
         ):
             gfxdraw.aapolygon(self.surf, poly, color)
             gfxdraw.filled_polygon(self.surf, poly, color)
+
 
     def _create_image_array(self, screen, size):
         scaled_screen = pygame.transform.smoothscale(screen, size)
