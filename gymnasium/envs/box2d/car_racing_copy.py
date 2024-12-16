@@ -1,11 +1,11 @@
-__credits__ = ["Andrea PIERRÉ"]
-
 import math
 from typing import Optional, Union
-
+from Box2D import b2CircleShape
 import numpy as np
+import random
 
-import gymnasium as gym
+from gymnasium.core import Env
+from gymnasium.logger import warn
 from gymnasium import spaces
 from gymnasium.envs.box2d.car_dynamics import Car
 from gymnasium.error import DependencyNotInstalled, InvalidAction
@@ -105,7 +105,7 @@ class FrictionDetector(contactListener):
             obj.tiles.remove(tile)
 
 
-class CarRacing(gym.Env, EzPickle):
+class CarRacing(Env, EzPickle):
     """
     ## Description
     The easiest control task to learn from pixels - a top-down

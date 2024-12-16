@@ -30,7 +30,7 @@ except ImportError as e:
         'pygame is not installed, run `pip install "gymnasium[box2d]"`'
     ) from e
 
-CIRCLERADIUS = 5 #nossa variavel
+CIRCLERADIUS = 2.5 #nossa variavel
 NUM_OBSTACLES = 10 #nossa variavel
 
 STATE_W = 96  # less than Atari 160x192
@@ -84,6 +84,7 @@ class FrictionDetector(contactListener):
             if body_b.userData.get("type") == "obstacle":
                 # Handle collision with obstacle
                 self.env.reward -= 10
+        self._contact(contact, True)
 
     def EndContact(self, contact):
         self._contact(contact, False)
