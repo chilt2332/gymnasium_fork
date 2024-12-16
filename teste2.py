@@ -5,9 +5,6 @@ import os
 models_dir = "models/PPO"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
-    print("não existe")
-print("ja existe")
-
 
 env = make('CarRacing-v3', render_mode='human')
 env.reset()
@@ -22,7 +19,6 @@ while iters < MAX_ITERATIONS:
     iters += 1
     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
     model.save(f"{models_dir}/ppo_car_racing_{TIMESTEPS * iters}")
-    print(f"Iteration {iters} completed. Model saved.")
 
 env.close()
 
