@@ -3,7 +3,7 @@ from gymnasium.envs.registration import make
 
 
 
-best_model_path = f"models3/PPO/CnnPolicy/30000.zip"
+best_model_path = f"models4/PPO/CnnPolicy/60000.zip"
 trained_model = PPO.load(best_model_path, device="cpu")
 
 

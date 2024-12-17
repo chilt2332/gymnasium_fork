@@ -132,7 +132,7 @@ class FrictionDetector(contactListener):
             # Mark the tile as visited if not already done
             if not tile.road_visited:
                 tile.road_visited = True
-                self.env.reward += 2000.0 / len(self.env.track)
+                self.env.reward += 1000.0 / len(self.env.track)
                 self.env.tile_visited_count += 1
 
                 # Check if the lap is completed based on the track percentage

@@ -39,11 +39,11 @@ for algorithm_name, (algorithm_class, policies) in algorithms_and_policies.items
         print(f"Starting training for {algorithm_name} with {policy}")
 
         # Create model directory
-        model_dir = f"models3/{algorithm_name}/{policy}"
+        model_dir = f"models4/{algorithm_name}/{policy}"
         os.makedirs(model_dir, exist_ok=True)
 
         # Create environment
-        env = make('CarRacing-v3')
+        env = make('CarRacing-v3',)
         env.reset()
 
         # Configure the logger for TensorBoard
@@ -58,7 +58,7 @@ for algorithm_name, (algorithm_class, policies) in algorithms_and_policies.items
 
         # Training parameters
         TIMESTEPS = 10000
-        NUM_ITERATIONS = 10
+        NUM_ITERATIONS = 500
 
         for i in range(1, NUM_ITERATIONS + 1):
             print(f"Training iteration {i}/{NUM_ITERATIONS} for {algorithm_name} with {policy}")
