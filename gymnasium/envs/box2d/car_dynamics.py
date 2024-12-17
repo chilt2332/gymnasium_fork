@@ -139,16 +139,17 @@ class Car:
         self.particles = []
 
     def gas(self, gas):
-        """control: rear wheel drive
+        """control: rear wheel drive with forward and reverse
 
         Args:
-            gas (float): How much gas gets applied. Gets clipped between 0 and 1.
+            gas (float): How much gas gets applied. Positive values move forward, negative values reverse.
+                        Gets clipped between -1 and 1.
         """
-        gas = np.clip(gas, 0, 1)
-        for w in self.wheels[2:4]:
+        gas = np.clip(gas, 0, 1)  # Allow range from -1 to 1
+        for w in self.wheels[2:4]:  # Rear wheels only
             diff = gas - w.gas
             if diff > 0.1:
-                diff = 0.1  # gradually increase, but stop immediately
+                diff = 0.1  # Gradually increase forward throttle
             w.gas += diff
 
     def brake(self, b):

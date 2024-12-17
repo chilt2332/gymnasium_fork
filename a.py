@@ -8,7 +8,7 @@ import os
 import torch  # To check GPU availability
 
 # Ensure TensorBoard logging directory exists
-tensorboard_log_dir = "logs"
+tensorboard_log_dir = "logs2"
 os.makedirs(tensorboard_log_dir, exist_ok=True)
 
 # Check for GPU and set device to CUDA if available
@@ -58,7 +58,7 @@ for algorithm_name, (algorithm_class, policies) in algorithms_and_policies.items
 
         # Training parameters
         TIMESTEPS = 10000
-        NUM_ITERATIONS = 500
+        NUM_ITERATIONS = 300
 
         for i in range(1, NUM_ITERATIONS + 1):
             print(f"Training iteration {i}/{NUM_ITERATIONS} for {algorithm_name} with {policy}")

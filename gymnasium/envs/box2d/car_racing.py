@@ -11,27 +11,24 @@ from gymnasium.envs.box2d.car_dynamics import Car
 from gymnasium.error import DependencyNotInstalled, InvalidAction
 from gymnasium.utils import EzPickle
 
-
 try:
     import Box2D
     from Box2D.b2 import contactListener, fixtureDef, polygonShape
-except ImportError as e:
-    raise DependencyNotInstalled(
-        'Box2D is not installed, you can install it by run `pip install swig` followed by `pip install "gymnasium[box2d]"`'
-    ) from e
+except ImportError:
+    raise DependencyNotInstalled("box2D is not installed, run `pip install gym[box2d]`")
 
 try:
     # As pygame is necessary for using the environment (reset and step) even without a render mode
     #   therefore, pygame is a necessary import for the environment.
     import pygame
     from pygame import gfxdraw
-except ImportError as e:
+except ImportError:
     raise DependencyNotInstalled(
-        'pygame is not installed, run `pip install "gymnasium[box2d]"`'
-    ) from e
+        "pygame is not installed, run `pip install gym[box2d]`"
+    )
 
 CIRCLERADIUS = 2.5 #nossa variavel
-NUM_OBSTACLES = 5 #nossa variavel
+NUM_OBSTACLES = 5 
 
 STATE_W = 96  # less than Atari 160x192
 STATE_H = 96
@@ -58,6 +55,7 @@ MAX_SHAPE_DIM = (
     max(GRASS_DIM, TRACK_WIDTH, TRACK_DETAIL_STEP) * math.sqrt(2) * ZOOM * SCALE
 )
 
+
 class FrictionDetector(contactListener):
     def __init__(self, env, lap_complete_percent):
         contactListener.__init__(self)
@@ -65,39 +63,18 @@ class FrictionDetector(contactListener):
         self.lap_complete_percent = lap_complete_percent
 
     def BeginContact(self, contact):
-        """
-        This method is called when two objects begin to collide.
-        """
-        # Get the bodies involved in the collision
-        fixture_a = contact.fixtureA
-        fixture_b = contact.fixtureB
-        body_a = fixture_a.body
-        body_b = fixture_b.body
-
-        # Check if 'userData' exists and is a dictionary before accessing it
-        if hasattr(body_a, "userData") and isinstance(body_a.userData, dict):
-            if body_a.userData.get("type") == "obstacle":
-                # Handle collision with obstacle
-                pass
-
-        if hasattr(body_b, "userData") and isinstance(body_b.userData, dict):
-            if body_b.userData.get("type") == "obstacle":
-                # Handle collision with obstacle
-                self.env.reward -= 2
         self._contact(contact, True)
 
     def EndContact(self, contact):
         self._contact(contact, False)
-        
+
     def _contact(self, contact, begin):
         tile = None
         obj = None
 
-        # Retrieve user data for both fixtures
         u1 = contact.fixtureA.body.userData
         u2 = contact.fixtureB.body.userData
 
-        # Handle the case where userData might be a dictionary
         if isinstance(u1, dict) and "road_friction" in u1:
             tile = u1
             obj = u2
@@ -112,30 +89,23 @@ class FrictionDetector(contactListener):
             tile = u2
             obj = u1
 
-        # If no valid tile is found, exit the function early
         if not tile:
             return
 
-        # Inherit tile color from the environment
         tile.color[:] = self.env.road_color
 
-        # If no valid object or no "tiles" attribute, exit the function
         if not obj or "tiles" not in obj.__dict__:
             return
 
-        # Handle the beginning of the contact
         if begin:
-            # Add the tile to the object's tiles collection if not already present
             if tile not in obj.tiles:
                 obj.tiles.add(tile)
 
-            # Mark the tile as visited if not already done
             if not tile.road_visited:
                 tile.road_visited = True
                 self.env.reward += 1000.0 / len(self.env.track)
                 self.env.tile_visited_count += 1
 
-                # Check if the lap is completed based on the track percentage
                 if (
                     tile.idx == 0
                     and self.env.tile_visited_count / len(self.env.track)
@@ -143,12 +113,11 @@ class FrictionDetector(contactListener):
                 ):
                     self.env.new_lap = True
         else:
-            # Handle the end of the contact: remove the tile from the object's tiles collection
             if tile in obj.tiles:
                 obj.tiles.remove(tile)
             else:
-                # Optionally log a warning or handle the case where the tile is not in the list
                 print(f"Warning: Tile {tile} not found in tiles list of {obj}")
+
 
 class CarRacing(Env, EzPickle):
     metadata = {
@@ -199,7 +168,8 @@ class CarRacing(Env, EzPickle):
             shape=polygonShape(vertices=[(0, 0), (1, 0), (1, -1), (0, -1)])
         )
 
-
+        # This will throw a warning in tests/envs/test_envs in utils/env_checker.py as the space is not symmetric
+        #   or normalised however this is not possible here so ignore
         if self.continuous:
             self.action_space = spaces.Box(
                 np.array([-1, 0, 0]).astype(np.float32),
@@ -256,27 +226,20 @@ class CarRacing(Env, EzPickle):
             self.grass_color[idx] += 20
 
     def _add_circle_obstacle(self, x, y, radius):
-        """
-        Adds a circle obstacle to the Box2D world at (x, y) with the given radius.
-        """
-        # Create the shape for the circle
+
         shape = b2CircleShape(radius=radius)
 
-        # Create the static body
         body = self.world.CreateStaticBody(
             position=(x, y),
             shapes=shape
         )
-        
-        # Add userData for rendering
         body.userData = {"type": "obstacle", "color": (255, 0, 0), "radius": radius}
         return body
-
+    
     def _create_track(self):
         CHECKPOINTS = 12
         tiles_positions = []
 
-        # Create checkpoints
         checkpoints = []
         for c in range(CHECKPOINTS):
             noise = self.np_random.uniform(0, 2 * math.pi * 1 / CHECKPOINTS)
@@ -515,12 +478,11 @@ class CarRacing(Env, EzPickle):
         if self.render_mode == "human":
             self.render()
         return self.step(None)[0], {}
-    
+
     def step(self, action: Union[np.ndarray, int]):
         assert self.car is not None
         if action is not None:
             if self.continuous:
-                action = action.astype(np.float64)
                 self.car.steer(-action[0])
                 self.car.gas(action[1])
                 self.car.brake(action[2])
@@ -543,7 +505,6 @@ class CarRacing(Env, EzPickle):
         step_reward = 0
         terminated = False
         truncated = False
-        info = {}
         if action is not None:  # First step without action, called from reset()
             self.reward -= 0.1
             # We actually don't want to count fuel spent, we want car to be faster.
@@ -552,28 +513,26 @@ class CarRacing(Env, EzPickle):
             step_reward = self.reward - self.prev_reward
             self.prev_reward = self.reward
             if self.tile_visited_count == len(self.track) or self.new_lap:
-                # Termination due to finishing lap
-                terminated = True
-                info["lap_finished"] = True
+                # Truncation due to finishing lap
+                # This should not be treated as a failure
+                # but like a timeout
+                truncated = True
             x, y = self.car.hull.position
             if abs(x) > PLAYFIELD or abs(y) > PLAYFIELD:
                 terminated = True
-                info["lap_finished"] = False
                 step_reward = -100
 
         if self.render_mode == "human":
             self.render()
-        return self.state, step_reward, terminated, truncated, info
+        return self.state, step_reward, terminated, truncated, {}
 
     def render(self):
         if self.render_mode is None:
-            assert self.spec is not None
             warn(
                 "You are calling render method without specifying any render mode. "
                 "You can specify the render_mode at initialization, "
-                f'e.g. gym.make("{self.spec.id}", render_mode="rgb_array")'
+                f'e.g. gym("{self.spec.id}", render_mode="rgb_array")'
             )
-            return
         else:
             return self._render(self.render_mode)
 
@@ -594,8 +553,9 @@ class CarRacing(Env, EzPickle):
         self.surf = pygame.Surface((WINDOW_W, WINDOW_H))
 
         assert self.car is not None
-        # Computing transformations
+        # computing transformations
         angle = -self.car.hull.angle
+        # Animating first second zoom.
         zoom = 0.1 * SCALE * max(1 - self.t, 0) + ZOOM * SCALE * min(self.t, 1)
         scroll_x = -(self.car.hull.position[0]) * zoom
         scroll_y = -(self.car.hull.position[1]) * zoom
@@ -613,7 +573,7 @@ class CarRacing(Env, EzPickle):
 
         self.surf = pygame.transform.flip(self.surf, False, True)
 
-        # Showing stats
+        # showing stats
         self._render_indicators(WINDOW_W, WINDOW_H)
 
         font = pygame.font.Font(pygame.font.get_default_font(), 42)
@@ -629,7 +589,8 @@ class CarRacing(Env, EzPickle):
             self.screen.fill(0)
             self.screen.blit(self.surf, (0, 0))
             pygame.display.flip()
-        elif mode == "rgb_array":
+
+        if mode == "rgb_array":
             return self._create_image_array(self.surf, (VIDEO_W, VIDEO_H))
         elif mode == "state_pixels":
             return self._create_image_array(self.surf, (STATE_W, STATE_H))
@@ -682,7 +643,7 @@ class CarRacing(Env, EzPickle):
 
                     radius = body.userData["radius"]
                     self._draw_colored_circle(self.surf, position, radius, color, zoom, translation, angle)
-        
+
     def _draw_colored_circle(self, surface, center, radius, color, zoom, translation, angle, clip=True):
         # Rotate the center point based on the environment's angle
         rotated_center = pygame.math.Vector2(center).rotate_rad(angle)
@@ -702,7 +663,6 @@ class CarRacing(Env, EzPickle):
             # Draw the circle with anti-aliasing
             gfxdraw.aacircle(surface, int(transformed_center[0]), int(transformed_center[1]), transformed_radius, color)
             gfxdraw.filled_circle(surface, int(transformed_center[0]), int(transformed_center[1]), transformed_radius, color)
-
 
     def _render_indicators(self, W, H):
         s = W / 40.0
@@ -772,12 +732,18 @@ class CarRacing(Env, EzPickle):
             (255, 0, 0),
         )
 
-    def _draw_colored_polygon(self, surface, poly, color, zoom, translation, angle, clip=True):
+    def _draw_colored_polygon(
+        self, surface, poly, color, zoom, translation, angle, clip=True
+    ):
         poly = [pygame.math.Vector2(c).rotate_rad(angle) for c in poly]
         poly = [
             (c[0] * zoom + translation[0], c[1] * zoom + translation[1]) for c in poly
         ]
-        # This checks if the polygon is out of bounds of the screen
+        # This checks if the polygon is out of bounds of the screen, and we skip drawing if so.
+        # Instead of calculating exactly if the polygon and screen overlap,
+        # we simply check if the polygon is in a larger bounding box whose dimension
+        # is greater than the screen by MAX_SHAPE_DIM, which is the maximum
+        # diagonal length of an environment object
         if not clip or any(
             (-MAX_SHAPE_DIM <= coord[0] <= WINDOW_W + MAX_SHAPE_DIM)
             and (-MAX_SHAPE_DIM <= coord[1] <= WINDOW_H + MAX_SHAPE_DIM)
@@ -851,4 +817,3 @@ if __name__ == "__main__":
             if terminated or truncated or restart or quit:
                 break
     env.close()
-
