@@ -31,7 +31,7 @@ except ImportError as e:
     ) from e
 
 CIRCLERADIUS = 2.5 #nossa variavel
-NUM_OBSTACLES = 10 #nossa variavel
+NUM_OBSTACLES = 5 #nossa variavel
 
 STATE_W = 96  # less than Atari 160x192
 STATE_H = 96
@@ -469,7 +469,6 @@ class CarRacing(Env, EzPickle):
             y_plus = random.randint(-5, 5)
             x = int(x) + x_plus
             y = int(y) + y_plus
-            print(f"posiçao aleatoria x:{x}, y:{y}")
             self.obstacle = self._add_circle_obstacle(x, y, CIRCLERADIUS)
 
         self.track = track

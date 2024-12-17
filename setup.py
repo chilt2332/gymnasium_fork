@@ -1,12 +1,12 @@
 from stable_baselines3 import PPO
 from gymnasium.envs.registration import make
 
-models_dir = "models/PPO_Cnn_Obstacles"
+models_dir = "models2/PPO/MlpPolicy"
 
-env = make("models/PPO_Cnn_Obstacles",render_mode = "human")  # continuous: LunarLanderContinuous-v2
+env = make('CarRacing-v3',render_mode = "human")  # continuous: LunarLanderContinuous-v2
 env.reset()
 
-model_path = f"{models_dir}/10000000.zip"
+model_path = f"{models_dir}/10000"
 model = PPO.load(model_path, env=env)
 
 episodes = 1
